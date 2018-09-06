@@ -19,8 +19,7 @@ import java.util.*;
 
 public class Extentx implements IReporter {
 
-    private static final String OUTPUT_FOLDER = "Reports/";
-    private static final String FILE_NAME = "ExtentReport_3.5.html";
+    private static final String FILE_NAME = "./Reports/ExtentReport_3.5.html";
 
     private ExtentReports extent;
 
@@ -60,7 +59,7 @@ public class Extentx implements IReporter {
         String html_DocumentTitle = property.getProperty("html_DocumentTitle").trim();
         String html_ReportName = ReportName;
 
-        ExtentHtmlReporter htmlReporter = new ExtentHtmlReporter(OUTPUT_FOLDER + FILE_NAME);
+        ExtentHtmlReporter htmlReporter = new ExtentHtmlReporter(FILE_NAME);
         htmlReporter.config().setDocumentTitle(html_DocumentTitle);
         htmlReporter.config().setReportName(html_ReportName);
         htmlReporter.config().setTestViewChartLocation(ChartLocation.TOP);
@@ -80,8 +79,8 @@ public class Extentx implements IReporter {
         klov.setReportName(ReportName);
         klov.setStartTime(new Date(System.currentTimeMillis()));
         klov.setEndTime(new Date(System.currentTimeMillis()));
-        klov.setKlovUrl(property.getProperty("extentx_url").trim());  // url where Klov is running
-        klov.initMongoDbConnection("localhost");  // mongo-db address
+        klov.setKlovUrl("http://localhost");  // url where Klov is running
+        klov.initMongoDbConnection("localhost", 27017);
         klov.setDbName("klov");
 
 
@@ -104,8 +103,8 @@ public class Extentx implements IReporter {
         if (tests.size() > 0) {
             for (ITestResult result : tests.getAllResults()) {
 
-                Map<String, String> parameters = (Map<String, String>) result.getParameters()[0];
-                test = extent.createTest(parameters.get("testname"));
+                Object[] parameters = result.getParameters();
+                test = extent.createTest(String.valueOf(parameters[1]));
 
 
                 for (String group : result.getMethod().getGroups())
@@ -113,10 +112,10 @@ public class Extentx implements IReporter {
 
                 if (result.getThrowable() != null) {
                     test.log(status, result.getThrowable() + "\n\n" +
-                            parameters.get("testDesc"));
+                            parameters[0]);
                 } else {
                     test.log(status, "Test " + status.toString().toLowerCase() + "ed \n" +
-                            parameters.get("testDesc"));
+                            parameters[0]);
                 }
 
                 test.getModel().setStartTime(getTime(result.getStartMillis()));
