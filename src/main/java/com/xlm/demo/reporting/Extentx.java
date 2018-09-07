@@ -13,6 +13,7 @@ import com.xlm.demo.utility.Utility;
 import org.testng.*;
 import org.testng.xml.XmlSuite;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -33,9 +34,13 @@ public class Extentx implements IReporter {
             for (ISuiteResult r : result.values()) {
                 ITestContext context = r.getTestContext();
 
-                buildTestNodes(context.getFailedTests(), Status.FAIL);
-                buildTestNodes(context.getSkippedTests(), Status.SKIP);
-                buildTestNodes(context.getPassedTests(), Status.PASS);
+                try {
+                    buildTestNodes(context.getFailedTests(), Status.FAIL);
+                    buildTestNodes(context.getSkippedTests(), Status.SKIP);
+                    buildTestNodes(context.getPassedTests(), Status.PASS);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
             }
         }
@@ -96,26 +101,25 @@ public class Extentx implements IReporter {
         }
     }
 
-    private void buildTestNodes(IResultMap tests, Status status) {
+    private void buildTestNodes(IResultMap tests, Status status) throws IOException {
         ExtentTest test;
 
 
         if (tests.size() > 0) {
             for (ITestResult result : tests.getAllResults()) {
 
-                Object[] parameters = result.getParameters();
-                test = extent.createTest(String.valueOf(parameters[1]));
+                HashMap<String, Object> parameters = (HashMap<String, Object>) result.getParameters()[0];
+                test = extent.createTest(String.valueOf(parameters.get("Expected")));
 
 
                 for (String group : result.getMethod().getGroups())
                     test.assignCategory(group);
 
                 if (result.getThrowable() != null) {
-                    test.log(status, result.getThrowable() + "\n\n" +
-                            parameters[0]);
+                    test.log(status, result.getThrowable() + "\n\n");
                 } else {
-                    test.log(status, "Test " + status.toString().toLowerCase() + "ed \n" +
-                            parameters[0]);
+                    test.log(status, "Test " + status.toString().toLowerCase() + "ed \n");
+                    //test.addScreenCaptureFromPath(String.valueOf(parameters.get("screenShotPath")));
                 }
 
                 test.getModel().setStartTime(getTime(result.getStartMillis()));
