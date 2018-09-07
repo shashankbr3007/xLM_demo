@@ -5,12 +5,15 @@ import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import com.aventstack.extentreports.reporter.KlovReporter;
+import com.xlm.demo.controller.TestController;
 import com.xlm.demo.model.DemoQAModel;
 import com.xlm.demo.utility.Utility;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.testng.Assert;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
@@ -23,21 +26,26 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
+@Service
 public class ApplicationTests {
 
-    DemoQAModel model = new DemoQAModel();
-    String dest;
+    @Autowired
+    TestController testController;
+
+    private DemoQAModel model = new DemoQAModel();
+    private Robot robot;
     private ExtentReports extent;
+    public static List<String> testCasestoExecute;
 
     @BeforeSuite
     public void beforeSuite() throws Exception {
         System.setProperty("webdriver.gecko.driver", "./webdriver/geckodriverv0.19.1/geckodriver.exe");
+        System.setProperty("java.awt.headless", "false");
         Utility.loadProperty();
-
+        robot = new Robot();
         ExtentHtmlReporter htmlReporter = Utility.newExtentHtmlReporter();
         KlovReporter klov = Utility.newKlovReporter();
         extent = new ExtentReports();
@@ -48,7 +56,7 @@ public class ApplicationTests {
 
     }
 
-    public WebDriver loadDriver(String browser) {
+    private WebDriver loadDriver(String browser) {
         WebDriver driver = null;
 
         if (browser.equalsIgnoreCase("Firefox")) {
@@ -63,7 +71,7 @@ public class ApplicationTests {
     }
 
     @Test(dataProvider = "TestButtons")
-    public void applicationTest(HashMap<String, Object> testInputs) throws IOException, AWTException {
+    public void applicationTest(HashMap<String, Object> testInputs) throws IOException {
 
         testInputs.put("testStartTime", System.currentTimeMillis());
 
@@ -71,7 +79,6 @@ public class ApplicationTests {
 
         driver.findElement((By) testInputs.get("WebElement")).click();
 
-        Robot robot = new Robot();
         BufferedImage screenShot = robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
         ImageIO.write(screenShot, "JPG", new File("./screenshots/" + testInputs.get("Expected") + ".jpg"));
         testInputs.put("screenShotPath", "./screenshots/" + testInputs.get("Expected") + ".jpg");
@@ -86,15 +93,15 @@ public class ApplicationTests {
         testInputs.put("actualDescription", actualDescription[0]);
         Assert.assertEquals(actualDescription[0], testInputs.get("description"));
 
-        driver.quit();
+        driver.close();
         testInputs.put("testEndTime", System.currentTimeMillis());
     }
 
     @AfterMethod
     public void postResults(ITestResult result) {
-        HashMap<String, Object> parameters = (HashMap<String, Object>) result.getParameters()[0];
+        HashMap parameters = (HashMap) result.getParameters()[0];
 
-        ExtentTest test = extent.createTest(String.valueOf(parameters.get("Expected")));
+        ExtentTest test = extent.createTest(String.valueOf(parameters.get("testName")));
 
 
         if (result.getStatus() == ITestResult.FAILURE) {
@@ -123,46 +130,51 @@ public class ApplicationTests {
                 test.log(Status.SKIP, "Test " + Status.SKIP.toString().toLowerCase() + "ed <bold><br />");
             }
         }
-        test.getModel().setStartTime(getTime((Long) parameters.get("testStartTime")));
-        test.getModel().setEndTime(getTime((Long) parameters.get("testEndTime")));
+        test.getModel().setStartTime(Utility.getTime((Long) parameters.get("testStartTime")));
+        test.getModel().setEndTime(Utility.getTime((Long) parameters.get("testEndTime")));
 
         extent.flush();
     }
 
-    private Date getTime(long millis) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(millis);
-        return calendar.getTime();
-    }
 
     @DataProvider(name = "TestButtons")
     public Object[][] dataprovider() {
         Object[][] testdata = new Object[5][1];
 
         for (int i = 0; i < 5; i++) {
-            HashMap<String, Object> testInputs = new HashMap();
+            HashMap<String, Object> testInputs = new HashMap<>();
             if (i == 0) {
+                testInputs.put("testName", "btn_draggable");
                 testInputs.put("WebElement", model.btn_draggable);
                 testInputs.put("Expected", "Draggable");
                 testInputs.put("description", "Allow elements to be moved using the mouse.");
             } else if (i == 1) {
+                testInputs.put("testName", "btn_droppable");
                 testInputs.put("WebElement", model.btn_droppable);
                 testInputs.put("Expected", "Droppable");
                 testInputs.put("description", "Create targets for draggable elements.");
             } else if (i == 2) {
+                testInputs.put("testName", "btn_resizable");
                 testInputs.put("WebElement", model.btn_resizable);
                 testInputs.put("Expected", "Resizable");
                 testInputs.put("description", "Change the size of an element using the mouse.");
             } else if (i == 3) {
+                testInputs.put("testName", "btn_selectable");
                 testInputs.put("WebElement", model.btn_selectable);
                 testInputs.put("Expected", "Selectable");
                 testInputs.put("description", "Use the mouse to select elements, individually or in a group.");
             } else {
+                testInputs.put("testName", "btn_sortable");
                 testInputs.put("WebElement", model.btn_sortable);
                 testInputs.put("Expected", "Sortable");
                 testInputs.put("description", "Reorder elements in a list or grid using the mouse.");
             }
-            testdata[i][0] = testInputs;
+
+
+            if (testInputs.get("testName") != null &&
+                    testCasestoExecute.contains(testInputs.get("testName"))) {
+                testdata[i][0] = testInputs;
+            }
         }
 
         return testdata;

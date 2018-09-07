@@ -8,6 +8,7 @@ import com.aventstack.extentreports.reporter.configuration.Theme;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 
@@ -45,9 +46,15 @@ public class Utility {
         klov.setReportName(ReportName);
         klov.setStartTime(new Date(System.currentTimeMillis()));
         klov.setEndTime(new Date(System.currentTimeMillis()));
-        klov.setKlovUrl("http://localhost");  // url where Klov is running
+        klov.setKlovUrl("http://localhost:8181");  // url where Klov is running
         klov.initMongoDbConnection("localhost", 27017);
         klov.setDbName("klov");
         return klov;
+    }
+
+    public static Date getTime(long millis) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(millis);
+        return calendar.getTime();
     }
 }
