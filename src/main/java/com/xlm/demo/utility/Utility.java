@@ -8,6 +8,7 @@ import com.aventstack.extentreports.reporter.configuration.Theme;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
@@ -56,5 +57,11 @@ public class Utility {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(millis);
         return calendar.getTime();
+    }
+
+    public static String getCurrentDate() {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        Date date = new Date();
+        return formatter.format(date);
     }
 }
