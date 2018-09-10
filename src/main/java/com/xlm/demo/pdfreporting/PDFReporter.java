@@ -1,18 +1,18 @@
 package com.xlm.demo.pdfreporting;
 
 import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.FontSelector;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.List;
+
+import static com.xlm.demo.utility.Utility.setCellFonts;
+import static com.xlm.demo.utility.Utility.setFont;
 
 public class PDFReporter {
 
-    public static void main(String[] args) throws Exception {
+    public Document PDFReporter() throws Exception {
         Document document = new Document(PageSize.A4);
         PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream("./Reports/iTextHelloWorld.pdf"));
 
@@ -31,44 +31,12 @@ public class PDFReporter {
 
         /*SET TEST SUMMARY REPORT WITH THE EXECUTION NUMERIC TABLES */
         setSummaryReport(document);
-
-        PDFTestReportModel model = new PDFTestReportModel();
-        model.setTestName("First Test Case");
-        model.setTestResult("Pass");
-
-        PDFTestReportModel model1 = new PDFTestReportModel();
-        model1.setTestName("Second Test Case");
-        model1.setTestResult("Skip");
-
-        PDFTestReportModel model2 = new PDFTestReportModel();
-        model2.setTestName("Third Test Case");
-        model2.setTestResult("Fail");
-        List<String> testsdesc = new ArrayList<>();
-
-        testsdesc.add("First Step Passed");
-        testsdesc.add("Seconnd Step Passed");
-        testsdesc.add("Third Step Passed");
-
-        model.setTestDescriptions(testsdesc);
-        model1.setTestDescriptions(testsdesc);
-        model2.setTestDescriptions(testsdesc);
-
         document.add(new Paragraph("\n\n\n\n\n"));
-        document.add(model.setTestResultTable());
-        document.add(new Paragraph("\n"));
 
-        document.add(new Paragraph("\n"));
-        document.add(model1.setTestResultTable());
-        document.add(new Paragraph("\n"));
-
-        document.add(new Paragraph("\n"));
-        document.add(model2.setTestResultTable());
-        document.add(new Paragraph("\n"));
-
-        document.close();
+        return document;
     }
 
-    private static void setSummaryReport(Document document) throws Exception {
+    private void setSummaryReport(Document document) throws Exception {
 
         document.add(new Paragraph("\n\n\n"));
         PdfPTable table = new PdfPTable(2);
@@ -106,7 +74,7 @@ public class PDFReporter {
         document.add(new Paragraph("\n\n\n"));
     }
 
-    private static void setTestObjective(Document document) throws DocumentException {
+    private void setTestObjective(Document document) throws DocumentException {
 
         PdfPTable table = new PdfPTable(2);
         table.setWidths(new int[]{1, 2});
@@ -128,7 +96,7 @@ public class PDFReporter {
         document.add(new Paragraph("\n\n"));
     }
 
-    private static void setReportLogo(Document document) throws Exception {
+    private void setReportLogo(Document document) throws Exception {
         document.add(new Paragraph("\n\n"));
         Image img = Image.getInstance("./screenshots/xlm-logo.jpg");
         img.setAlignment(Image.ALIGN_CENTER);
@@ -136,22 +104,4 @@ public class PDFReporter {
         document.add(img);
         document.add(new Paragraph("\n\n"));
     }
-
-    public static Phrase setFont(String text, int size, BaseColor color) {
-        FontSelector selector1 = new FontSelector();
-        Font f1 = FontFactory.getFont(FontFactory.TIMES_ROMAN, size);
-        f1.setColor(color);
-        selector1.addFont(f1);
-        Phrase ph = selector1.process(text);
-        return ph;
-    }
-
-    public static PdfPCell setCellFonts(Phrase phrase, int horizontalAlignment, int verticalAlignment) {
-        PdfPCell AlignCell = new PdfPCell(phrase);
-        AlignCell.setHorizontalAlignment(horizontalAlignment);
-        AlignCell.setVerticalAlignment(verticalAlignment);
-
-        return AlignCell;
-    }
-
 }

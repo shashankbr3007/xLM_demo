@@ -5,8 +5,12 @@ import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import com.aventstack.extentreports.reporter.KlovReporter;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Paragraph;
 import com.xlm.demo.controller.TestController;
 import com.xlm.demo.model.DemoQAModel;
+import com.xlm.demo.pdfreporting.PDFReporter;
+import com.xlm.demo.pdfreporting.PDFTestReportModel;
 import com.xlm.demo.utility.Utility;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -16,29 +20,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.testng.Assert;
 import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 @Service
 public class ApplicationTests {
 
+    public static List<String> testCasestoExecute;
     @Autowired
     TestController testController;
-
     private DemoQAModel model = new DemoQAModel();
     private Robot robot;
     private ExtentReports extent;
-    public static List<String> testCasestoExecute;
+    private PDFReporter pdfReporter;
+    private Document pdf;
 
     @BeforeSuite
     public void beforeSuite() throws Exception {
@@ -53,6 +56,8 @@ public class ApplicationTests {
         if (Utility.property.getProperty("UpdateReports").equalsIgnoreCase("yes")) {
             extent.attachReporter(klov);
         }
+        pdfReporter = new PDFReporter();
+        pdf = pdfReporter.PDFReporter();
 
     }
 
@@ -98,25 +103,37 @@ public class ApplicationTests {
     }
 
     @AfterMethod
-    public void postResults(ITestResult result) {
+    public void postResults(ITestResult result) throws Exception {
         HashMap parameters = (HashMap) result.getParameters()[0];
 
         ExtentTest test = extent.createTest(String.valueOf(parameters.get("testName")));
+        PDFTestReportModel pdftest = new PDFTestReportModel(String.valueOf(parameters.get("testName")));
 
 
         if (result.getStatus() == ITestResult.FAILURE) {
             if (result.getThrowable() != null) {
                 test.log(Status.FAIL, result.getThrowable() + "<br />");
+                pdftest.setTestResult("FAIL");
+                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
             } else {
                 test.log(Status.FAIL, "Test " + Status.FAIL.toString().toLowerCase() + "ed <bold><br />");
+                pdftest.setTestResult("FAIL");
+                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.FAIL.toString().toLowerCase() + "ed"));
             }
         } else if (result.getStatus() == ITestResult.SUCCESS) {
             if (result.getThrowable() != null) {
                 test.log(Status.PASS, result.getThrowable() + "<br />");
+                pdftest.setTestResult("PASS");
+                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
             } else {
                 test.log(Status.PASS, "Test " + Status.PASS.toString().toLowerCase() + "ed <br />" +
                         "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected") + "<br />" +
                         "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description"));
+
+                pdftest.setTestResult("PASS");
+                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.PASS.toString().toLowerCase() + "ed",
+                        "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected"),
+                        "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description")));
             }
             try {
                 test.addScreenCaptureFromPath((String) parameters.get("screenShotPath"));
@@ -126,16 +143,30 @@ public class ApplicationTests {
         } else if (result.getStatus() == ITestResult.SKIP) {
             if (result.getThrowable() != null) {
                 test.log(Status.SKIP, result.getThrowable() + "<br />");
+                pdftest.setTestResult("PASS");
+                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
             } else {
                 test.log(Status.SKIP, "Test " + Status.SKIP.toString().toLowerCase() + "ed <bold><br />");
+                pdftest.setTestResult("PASS");
+                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.PASS.toString().toLowerCase() + "ed",
+                        "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected"),
+                        "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description")));
+
             }
         }
         test.getModel().setStartTime(Utility.getTime((Long) parameters.get("testStartTime")));
         test.getModel().setEndTime(Utility.getTime((Long) parameters.get("testEndTime")));
 
         extent.flush();
+        pdf.add(pdftest.setTestResultTable());
+        pdf.add(new Paragraph("\n"));
+
     }
 
+    @AfterSuite
+    public void suiteTearDown() {
+        pdf.close();
+    }
 
     @DataProvider(name = "TestButtons")
     public Object[][] dataprovider() {
@@ -171,10 +202,10 @@ public class ApplicationTests {
             }
 
 
-            if (testInputs.get("testName") != null &&
-                    testCasestoExecute.contains(testInputs.get("testName"))) {
-                testdata[i][0] = testInputs;
-            }
+            /*if (testInputs.get("testName") != null &&
+                    testCasestoExecute.contains(testInputs.get("testName"))) {*/
+            testdata[i][0] = testInputs;
+            /*}*/
         }
 
         return testdata;

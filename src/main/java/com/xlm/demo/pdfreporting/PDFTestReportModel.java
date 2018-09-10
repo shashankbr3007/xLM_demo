@@ -7,14 +7,18 @@ import com.itextpdf.text.pdf.PdfPTable;
 
 import java.util.List;
 
-import static com.xlm.demo.pdfreporting.PDFReporter.setCellFonts;
-import static com.xlm.demo.pdfreporting.PDFReporter.setFont;
+import static com.xlm.demo.utility.Utility.setCellFonts;
+import static com.xlm.demo.utility.Utility.setFont;
 
 public class PDFTestReportModel {
 
     private String testName;
     private String testResult;
     private List<String> testDescriptions;
+
+    public PDFTestReportModel(String testName) {
+        this.testName = testName;
+    }
 
     public String getTestName() {
         return testName;

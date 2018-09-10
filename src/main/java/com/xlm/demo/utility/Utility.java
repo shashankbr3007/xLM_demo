@@ -4,6 +4,12 @@ import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import com.aventstack.extentreports.reporter.KlovReporter;
 import com.aventstack.extentreports.reporter.configuration.ChartLocation;
 import com.aventstack.extentreports.reporter.configuration.Theme;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.FontSelector;
+import com.itextpdf.text.pdf.PdfPCell;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -63,5 +69,22 @@ public class Utility {
         SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         Date date = new Date();
         return formatter.format(date);
+    }
+
+    public static Phrase setFont(String text, int size, BaseColor color) {
+        FontSelector selector1 = new FontSelector();
+        Font f1 = FontFactory.getFont(FontFactory.TIMES_ROMAN, size);
+        f1.setColor(color);
+        selector1.addFont(f1);
+        Phrase ph = selector1.process(text);
+        return ph;
+    }
+
+    public static PdfPCell setCellFonts(Phrase phrase, int horizontalAlignment, int verticalAlignment) {
+        PdfPCell AlignCell = new PdfPCell(phrase);
+        AlignCell.setHorizontalAlignment(horizontalAlignment);
+        AlignCell.setVerticalAlignment(verticalAlignment);
+
+        return AlignCell;
     }
 }
