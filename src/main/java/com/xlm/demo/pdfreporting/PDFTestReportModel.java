@@ -1,5 +1,6 @@
 package com.xlm.demo.pdfreporting;
 
+import com.aventstack.extentreports.Status;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -13,7 +14,7 @@ import static com.xlm.demo.utility.Utility.setFont;
 public class PDFTestReportModel {
 
     private String testName;
-    private String testResult;
+    private Status testResult;
     private List<String> testDescriptions;
 
     public PDFTestReportModel(String testName) {
@@ -28,11 +29,11 @@ public class PDFTestReportModel {
         this.testName = testName;
     }
 
-    public String getTestResult() {
+    public Status getTestResult() {
         return testResult;
     }
 
-    public void setTestResult(String testResult) {
+    public void setTestResult(Status testResult) {
         this.testResult = testResult;
     }
 
@@ -62,12 +63,12 @@ public class PDFTestReportModel {
         testDescription.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(testDescription);
 
-        if (testResult.equalsIgnoreCase("pass")) {
-            table.addCell(setCellFonts(setFont(testResult, 12, BaseColor.GREEN), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
-        } else if (testResult.equalsIgnoreCase("fail")) {
-            table.addCell(setCellFonts(setFont(testResult, 12, BaseColor.RED), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
+        if (testResult.toString().equalsIgnoreCase("pass")) {
+            table.addCell(setCellFonts(setFont(testResult.toString().toUpperCase(), 12, BaseColor.GREEN), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
+        } else if (testResult.toString().equalsIgnoreCase("fail")) {
+            table.addCell(setCellFonts(setFont(testResult.toString().toUpperCase(), 12, BaseColor.RED), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
         } else {
-            table.addCell(setCellFonts(setFont(testResult, 12, BaseColor.YELLOW), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
+            table.addCell(setCellFonts(setFont(testResult.toString().toUpperCase(), 12, BaseColor.YELLOW), Element.ALIGN_CENTER, Element.ALIGN_MIDDLE));
         }
 
         return table;

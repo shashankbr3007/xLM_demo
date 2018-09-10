@@ -14,7 +14,7 @@ public class PDFReporter {
 
     public Document PDFReporter() throws Exception {
         Document document = new Document(PageSize.A4);
-        PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream("./Reports/iTextHelloWorld.pdf"));
+        PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream("./Reports/DemoAutomationReport.pdf"));
 
         /*SET HEADER AND FOOTER FOR THE PDF*/
         HeaderFooterPageEvent event = new HeaderFooterPageEvent(writer);

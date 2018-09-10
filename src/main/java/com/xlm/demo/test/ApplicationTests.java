@@ -12,7 +12,6 @@ import com.xlm.demo.model.DemoQAModel;
 import com.xlm.demo.pdfreporting.PDFReporter;
 import com.xlm.demo.pdfreporting.PDFTestReportModel;
 import com.xlm.demo.utility.Utility;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -34,10 +33,12 @@ import java.util.List;
 @Service
 public class ApplicationTests {
 
+
     public static List<String> testCasestoExecute;
+    final String URL = "http://demoqa.com/";
     @Autowired
     TestController testController;
-    private DemoQAModel model = new DemoQAModel();
+    private DemoQAModel model;
     private Robot robot;
     private ExtentReports extent;
     private PDFReporter pdfReporter;
@@ -66,10 +67,10 @@ public class ApplicationTests {
 
         if (browser.equalsIgnoreCase("Firefox")) {
             driver = new FirefoxDriver();
-            driver.get(model.URL);
+            driver.get(URL);
         } else if (browser.equalsIgnoreCase("Chrome")) {
             driver = new ChromeDriver();
-            driver.get(model.URL);
+            driver.get(URL);
         }
 
         return driver;
@@ -81,22 +82,23 @@ public class ApplicationTests {
         testInputs.put("testStartTime", System.currentTimeMillis());
 
         WebDriver driver = loadDriver("Firefox");
+        model = new DemoQAModel(driver);
 
-        driver.findElement((By) testInputs.get("WebElement")).click();
+        model.click_btn(model.getButtonElement((String) testInputs.get("testName")));
 
         BufferedImage screenShot = robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
-        ImageIO.write(screenShot, "JPG", new File("./screenshots/" + testInputs.get("Expected") + ".jpg"));
-        testInputs.put("screenShotPath", "./screenshots/" + testInputs.get("Expected") + ".jpg");
+        ImageIO.write(screenShot, "JPG", new File("./screenshots/" + testInputs.get("testName") + ".jpg"));
+        testInputs.put("screenShotPath", "./screenshots/" + testInputs.get("testName") + ".jpg");
 
 
-        String actualValue = driver.findElement(model.landingPageHeader).getText();
-        testInputs.put("Actual", actualValue);
-        Assert.assertEquals(actualValue, testInputs.get("Expected"));
+        String actuallandingPageHeader = model.get_landingPageHeader();
+        testInputs.put("actuallandingPageHeader", actuallandingPageHeader);
+        Assert.assertEquals(actuallandingPageHeader, testInputs.get("expectedlandingPageHeader"));
 
-        String landingPageContent = driver.findElement(model.landingPageContent).getText();
-        String[] actualDescription = landingPageContent.split("\n");
-        testInputs.put("actualDescription", actualDescription[0]);
-        Assert.assertEquals(actualDescription[0], testInputs.get("description"));
+        String landingPageContent = model.get_landingPageContent();
+        String[] actuallandingPageContent = landingPageContent.split("\n");
+        testInputs.put("actuallandingPageContent", actuallandingPageContent[0]);
+        Assert.assertEquals(actuallandingPageContent[0], testInputs.get("expectedlandingPageContent"));
 
         driver.close();
         testInputs.put("testEndTime", System.currentTimeMillis());
@@ -109,51 +111,17 @@ public class ApplicationTests {
         ExtentTest test = extent.createTest(String.valueOf(parameters.get("testName")));
         PDFTestReportModel pdftest = new PDFTestReportModel(String.valueOf(parameters.get("testName")));
 
-
         if (result.getStatus() == ITestResult.FAILURE) {
-            if (result.getThrowable() != null) {
-                test.log(Status.FAIL, result.getThrowable() + "<br />");
-                pdftest.setTestResult("FAIL");
-                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
-            } else {
-                test.log(Status.FAIL, "Test " + Status.FAIL.toString().toLowerCase() + "ed <bold><br />");
-                pdftest.setTestResult("FAIL");
-                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.FAIL.toString().toLowerCase() + "ed"));
-            }
+            updateReports(result, test, pdftest, parameters, Status.FAIL);
         } else if (result.getStatus() == ITestResult.SUCCESS) {
-            if (result.getThrowable() != null) {
-                test.log(Status.PASS, result.getThrowable() + "<br />");
-                pdftest.setTestResult("PASS");
-                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
-            } else {
-                test.log(Status.PASS, "Test " + Status.PASS.toString().toLowerCase() + "ed <br />" +
-                        "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected") + "<br />" +
-                        "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description"));
-
-                pdftest.setTestResult("PASS");
-                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.PASS.toString().toLowerCase() + "ed",
-                        "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected"),
-                        "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description")));
-            }
-            try {
-                test.addScreenCaptureFromPath((String) parameters.get("screenShotPath"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            updateReports(result, test, pdftest, parameters, Status.PASS);
         } else if (result.getStatus() == ITestResult.SKIP) {
-            if (result.getThrowable() != null) {
-                test.log(Status.SKIP, result.getThrowable() + "<br />");
-                pdftest.setTestResult("PASS");
-                pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
-            } else {
-                test.log(Status.SKIP, "Test " + Status.SKIP.toString().toLowerCase() + "ed <bold><br />");
-                pdftest.setTestResult("PASS");
-                pdftest.setTestDescriptions(Arrays.asList("Test " + Status.PASS.toString().toLowerCase() + "ed",
-                        "Actual : " + parameters.get("Actual") + " Expected : " + parameters.get("Expected"),
-                        "Actual Description : " + parameters.get("actualDescription") + " Expected Description : " + parameters.get("description")));
-
-            }
+            updateReports(result, test, pdftest, parameters, Status.SKIP);
         }
+
+        if (parameters.get("screenShotPath") != null)
+            test.addScreenCaptureFromPath((String) parameters.get("screenShotPath"));
+
         test.getModel().setStartTime(Utility.getTime((Long) parameters.get("testStartTime")));
         test.getModel().setEndTime(Utility.getTime((Long) parameters.get("testEndTime")));
 
@@ -162,6 +130,24 @@ public class ApplicationTests {
         pdf.add(new Paragraph("\n"));
 
     }
+
+    private void updateReports(ITestResult result, ExtentTest test, PDFTestReportModel pdftest, HashMap parameters, Status status) {
+        if (result.getThrowable() != null) {
+            test.log(status, result.getThrowable() + "<br />");
+            pdftest.setTestResult(status);
+            pdftest.setTestDescriptions(Arrays.asList(result.getThrowable()));
+        } else {
+            test.log(status, "Test " + status.toString().toLowerCase() + "ed <br />" +
+                    "Actual : " + parameters.get("actuallandingPageHeader") + " Expected : " + parameters.get("expectedlandingPageHeader") + "<br />" +
+                    "Actual Description : " + parameters.get("actuallandingPageContent") + " Expected Description : " + parameters.get("expectedlandingPageContent"));
+
+            pdftest.setTestResult(status);
+            pdftest.setTestDescriptions(Arrays.asList("Test " + status.toString().toLowerCase() + "ed",
+                    "Actual : " + parameters.get("actuallandingPageHeader") + " Expected : " + parameters.get("expectedlandingPageHeader"),
+                    "Actual Description : " + parameters.get("actuallandingPageContent") + " Expected Description : " + parameters.get("expectedlandingPageContent")));
+        }
+    }
+
 
     @AfterSuite
     public void suiteTearDown() {
@@ -176,33 +162,28 @@ public class ApplicationTests {
             HashMap<String, Object> testInputs = new HashMap<>();
             if (i == 0) {
                 testInputs.put("testName", "btn_draggable");
-                testInputs.put("WebElement", model.btn_draggable);
-                testInputs.put("Expected", "Draggable");
-                testInputs.put("description", "Allow elements to be moved using the mouse.");
+                testInputs.put("expectedlandingPageHeader", "Draggable");
+                testInputs.put("expectedlandingPageContent", "Allow elements to be moved using the mouse.");
             } else if (i == 1) {
                 testInputs.put("testName", "btn_droppable");
-                testInputs.put("WebElement", model.btn_droppable);
-                testInputs.put("Expected", "Droppable");
-                testInputs.put("description", "Create targets for draggable elements.");
+                testInputs.put("expectedlandingPageHeader", "Droppable");
+                testInputs.put("expectedlandingPageContent", "Create targets for draggable elements.");
             } else if (i == 2) {
                 testInputs.put("testName", "btn_resizable");
-                testInputs.put("WebElement", model.btn_resizable);
-                testInputs.put("Expected", "Resizable");
-                testInputs.put("description", "Change the size of an element using the mouse.");
+                testInputs.put("expectedlandingPageHeader", "Resizable");
+                testInputs.put("expectedlandingPageContent", "Change the size of an element using the mouse.");
             } else if (i == 3) {
                 testInputs.put("testName", "btn_selectable");
-                testInputs.put("WebElement", model.btn_selectable);
-                testInputs.put("Expected", "Selectable");
-                testInputs.put("description", "Use the mouse to select elements, individually or in a group.");
+                testInputs.put("expectedlandingPageHeader", "Selectable");
+                testInputs.put("expectedlandingPageContent", "Use the mouse to select elements, individually or in a group.");
             } else {
                 testInputs.put("testName", "btn_sortable");
-                testInputs.put("WebElement", model.btn_sortable);
-                testInputs.put("Expected", "Sortable");
-                testInputs.put("description", "Reorder elements in a list or grid using the mouse.");
+                testInputs.put("expectedlandingPageHeader", "Sortable");
+                testInputs.put("expectedlandingPageContent", "Reorder elements in a list or grid using the mouse.");
             }
 
 
-            /*if (testInputs.get("testName") != null &&
+           /* if (testInputs.get("testName") != null &&
                     testCasestoExecute.contains(testInputs.get("testName"))) {*/
             testdata[i][0] = testInputs;
             /*}*/
